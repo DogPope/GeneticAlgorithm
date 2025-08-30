@@ -7,310 +7,383 @@ Original file is located at
     https://colab.research.google.com/drive/1FrcoU2txxIX7zOJHRJ6XPoC72tPY_kds
 
 # Genetic Algorithm Assignment
-30% of the overall grade for this module  
-Marks indciated in sections below are based on percentage of marks allocated for this module  
+30% of the overall grade for this module
+
+Marks indciated in sections below are based on percentage of marks allocated for this module
+
 In this assignment you must choose a problem, and attempt to use the Genetic Alogrithm that we developed in class to solve this problem.
 
----
-
-# Genetic Algorithm on Snake
-
-This program will attempt to check if the Genetic Algorithm can successfully be implemented to run on the popular game, Snake. This will involve tying the necessary variables between programs, and see if the output from the program can be improved based on that.
-
-- Chromosome: The chromosome in this case is going to be how long the program has run, or a series of directions taken by the program.
-- Fitness Function: This will check the overall goal, otherwise the score of the program.
-- Crossover: This describes where the program will deviate from other chromosomal iterations, combining the outputs of the two to make one, better output.
-
----
-"""
-
-import random
-import numpy as np
-class Snake:
-    def __init__(self, chromosome=None):
-      self.board = [
-        ['#', '-', '-', '-', '-', '-', '-', '#'],
-        ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
-        ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
-        ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
-        ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
-        ['#', '-', '-', '-', '-', '-', '-', '#']
-      ]
-      self.snake = [(3, 3)] # Hard coded starting position
-      self.direction = 'w' # Always starts facing up
-      self.moves = []
-      self.height = len(self.board)
-      self.width = len(self.board[0])
-      self.score = 0
-      self.chromosome = chromosome
-      self.place_snake()
-      self.generate_food()
-
-    def place_snake(self):
-      head_x, head_y = self.snake[0]
-      self.board[head_x][head_y] = '0'
-
-    def generate_food(self):
-      for i in range(self.height):
-        for j in range(self.width):
-          if self.board[i][j] == '@':
-            self.board[i][j] = ' '
-      valid_positions = []
-      for i in range(1, self.height - 1):
-        for j in range(1, self.width - 1):
-          if (i, j) not in self.snake and self.board[i][j] == ' ':
-            valid_positions.append((i, j))
-
-      if valid_positions:
-        food_x, food_y = random.choice(valid_positions)
-        self.board[food_x][food_y] = '@'
-        return (food_x, food_y)
-      else:
-        return None
-
-    def display_board(self):
-      for row in self.board:
-        print(' '.join(str(cell) for cell in row))
-
-    def accept_input(self, chromosome, move_index):
-      if move_index < len(chromosome):
-        move_value = chromosome[move_index]
-        if 0 <= move_value < 1:
-            move = 'w'
-        elif 1 <= move_value < 2:
-            move = 's'
-        elif 2 <= move_value < 3:
-            move = 'a'
-        elif 3 <= move_value <= 4:
-            move = 'd'
-        else:
-            move = self.direction
-        self.moves.append(move)
-        return move # If invalid move, keep moving in same direction.
-
-    def move_snake(self):
-      head_x, head_y = self.snake[0]
-      if self.direction == "w":
-        new_head = (head_x - 1, head_y) # Up
-      elif self.direction == "s":
-        new_head = (head_x + 1, head_y) # Down
-      elif self.direction == "a":
-        new_head = (head_x, head_y - 1) # Left
-      elif self.direction == "d":
-        new_head = (head_x, head_y + 1) # Right
-
-      new_x, new_y = new_head # Validate head
-      if (self.board[new_x][new_y] == '#' or
-        self.board[new_x][new_y] == '-' or
-        self.board[new_x][new_y] == '|' or
-        new_head in self.snake):
-        return False
-
-      food_eaten = self.board[new_x][new_y] == '@'
-
-      self.snake.insert(0, new_head)
-      self.board[new_x][new_y] = '0'
-
-      if len(self.snake) > 1:
-        prev_head_x, prev_head_y = self.snake[1]
-        self.board[prev_head_x][prev_head_y] = 'o'
-
-      if not food_eaten:
-        tail_x, tail_y = self.snake.pop()
-        self.board[tail_x][tail_y] = ' '
-      else:
-        self.score += 1
-        self.generate_food()
-      return True
-
-    def play_game(self, chromosome):
-      game_over = False
-      move_index = 0
-      while not game_over:
-        self.direction = self.accept_input(chromosome, move_index)
-        game_over = not self.move_snake()
-        move_index += 1
-
-      print(f"The result is: {self.moves}, Score: {self.score}")
-      return self.score, self.moves
-
-"""## The Problem         **(~30%)**
+## The Problem         **(~30%)**
 
 *   Description of the problem
 
+## Improving the Game Snake via the Genetic Algorithm
+This project aims to record the input of a game of Snake and assess the outputs of said game using a Genetic Algorithm. The goal here is to optimise the game itself to improve the score. With the scope of the board size and the sheer amount of possible moves to be had, I don't think it is realistically possible to win the game in any circumstance.
+
+Previous iterations of this project were able to improve the score to 1, so the goal for this project should naturally be to get a score of greater than or above 2.
+
 *   Discussion of the suitablity of Genetic Algorithms
 
----
+## Suitability of the Genetic Algorithm
+A Genetic Algorithm is uniquely suited to this problem, as the game as it exists here is a series of recordable inputs that can be quantified into a possible score function.
+As a note here, the Output for the Snake program and Input into the GA will look like the following:
+```python
+{['a','w','d','s'], score=2}
+```
 
-A Genetic Algorithm implementation would be suitable for this project because it allows for parameters of a program to be treated like a genetic problem, with various parameters that could be improved upon, such as moves taken, overall score and so on.
+1. ### Inputs and Outputs
+The Snake game made here is a good candidate for the Genetic Algorithm as it has easily quantifiable metrics that could be used for improvement.
+* **Moves:** The moves here are going to be the main input in Snake, and defines the other metrics such as score, because score cannot be incremented if the player doesn't move.
+* **Score:** The score metric of the game corresponds to the amount of food eaten, and the length of the snake. Here, it is recorded as "Score".
 
-This algorithm could take outputs from the previous program and use them to define the best solution from a given set, allowing for re-insertion into the program to create an iteratively better solution than the previous one.
+2. ### Crossover:
+The Crossover will be responsible for making new chromosomes from the old ones. This is generally coded as taking the before and after of some point in a chromosome. This is easily done with the series of moves and scores given when the program is run according to a random seed.
 
----
+3. ### Mutation:
+The Mutation here will be responsible for introducing new, random changes into a chromosome. This will introduce diversity and new combinations into the population, and prevent it from getting stale, allowing for exploring new solutions.
+
+4. ### Iterative Improvement
+The GA will improve the results over subsequent generations, making the program better with each output.
+
+5. ### Scalability
+This program is easily scalable, and should be easily increased and assessed by running the game more times and increasing the population size for the GA.
 
 *   Complexity of the problem  (Overall marks allocated based on ..)
 ---
 
-This is not an overly complex problem. All it is, really, is taking a simplistic output from the Snake program, the length and score on the board, and using that to find the optimal solution from within the given set.
+# The problem **(~20%)**
 
-# The problem and the cost function   **(~20%)**
-The cost function here will attempt to return a cost value from the program. In this case, it will be the score divided by the number of moves it takes, which should negatively enforce taking too long to reach the food, and heavily reward it for getting food.
+<hr>
+
+### Problem Parameters:
+The GA in this case will have the following parameters associated with it:
+* Population Size: The population size is the number of times the problem is run and how many chromosomes are generated.
+* Generations: This refers to the number of iterations required to evolve the best solution.
+* Mutation Rate: This is the number of times a solution is changed over the course of a single generation.
 """
 
-class problem:
-  def cost_function(self, chromosome): # Cost Function returns negative value for negative reinforcement
-    game = Snake(chromosome = chromosome)
-    score, moves = game.play_game(chromosome)
-    if score == 0:
-      cost = 1 / (len(moves) + 1)
-    else:
-      cost = score + (score / len(moves))
-    cost = score / len(moves)
-    return -cost
-  def __init__(self):
-    self.number_of_genes = 100
-    self.min_value = 0
-    self.max_value = 4 # only 4 directions
-    self.acceptable_cost = -0.5 # Had to be changed to negative for negative reinforcement system.
+import random
+import numpy as np
+from copy import deepcopy
+
+class Snake: # Code for the Snake Game in this cell.
+    def __init__(self, chromosome=None):
+        self.board = [
+          ['#', '-', '-', '-', '-', '-', '-', '#'],
+          ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
+          ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
+          ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
+          ['|', ' ', ' ', ' ', ' ', ' ', ' ', '|'],
+          ['#', '-', '-', '-', '-', '-', '-', '#']
+        ]
+        self.snake = [(3, 3)] # Hard coded starting position
+        self.direction = 'w' # Always starts facing up
+        self.moves = []
+        self.height = len(self.board)
+        self.width = len(self.board[0])
+        self.score = 0
+        self.chromosome = chromosome
+        self.place_snake()
+        self.generate_food()
+
+    def place_snake(self):
+        head_x, head_y = self.snake[0]
+        self.board[head_x][head_y] = '0'
+
+    def generate_food(self):
+        for i in range(self.height):
+            for j in range(self.width):
+                if self.board[i][j] == '@':
+                    self.board[i][j] = ' '
+        valid_positions = []
+        for i in range(1, self.height - 1):
+            for j in range(1, self.width - 1):
+                if (i, j) not in self.snake and self.board[i][j] == ' ':
+                    valid_positions.append((i, j))
+
+        if valid_positions:
+            food_x, food_y = random.choice(valid_positions)
+            self.board[food_x][food_y] = '@'
+            return (food_x, food_y)
+        else:
+            return None
+
+    def display_board(self):
+        for row in self.board:
+            print(' '.join(str(cell) for cell in row))
+
+    def accept_input(self, chromosome, move_index):
+        if move_index < len(chromosome):
+            move_value = chromosome[move_index]
+            if 0 <= move_value < 1:
+                move = 'w'
+            elif 1 <= move_value < 2:
+                move = 's'
+            elif 2 <= move_value < 3:
+                move = 'a'
+            elif 3 <= move_value <= 4:
+                move = 'd'
+            else:
+                move = self.direction
+            self.moves.append(move)
+            return move # If invalid move, keep moving in same direction.
+
+    def move_snake(self):
+        head_x, head_y = self.snake[0]
+        if self.direction == "w":
+            new_head = (head_x - 1, head_y) # Up
+        elif self.direction == "s":
+            new_head = (head_x + 1, head_y) # Down
+        elif self.direction == "a":
+            new_head = (head_x, head_y - 1) # Left
+        elif self.direction == "d":
+            new_head = (head_x, head_y + 1) # Right
+
+        new_x, new_y = new_head # Validate head
+        if (self.board[new_x][new_y] == '#' or
+            self.board[new_x][new_y] == '-' or
+            self.board[new_x][new_y] == '|' or
+            new_head in self.snake):
+            return False
+
+        food_eaten = self.board[new_x][new_y] == '@'
+
+        self.snake.insert(0, new_head)
+        self.board[new_x][new_y] = '0'
+
+        if len(self.snake) > 1:
+            prev_head_x, prev_head_y = self.snake[1]
+            self.board[prev_head_x][prev_head_y] = 'o'
+
+        if not food_eaten:
+            tail_x, tail_y = self.snake.pop()
+            self.board[tail_x][tail_y] = ' '
+        else:
+            self.score += 1
+            self.generate_food()
+        return True
+
+    def play_game(self, chromosome):
+        game_over = False
+        move_index = 0
+        while not game_over:
+            self.direction = self.accept_input(chromosome, move_index)
+            game_over = not self.move_snake()
+            move_index += 1
+
+        print(f"The result is: {self.moves}, Score: {self.score}")
+        return self.score, self.moves
+
+"""## Genetic Algorithm Class
+This defines a Genetic algorithm class constructor along with it's parameters.
+- **Elitism Count:** Best selections from each generation.
+- **Generation Stats:** Maximum, Minimum and Average fitness will be tracked and sanity checked.
+"""
+
+class GeneticAlgorithm:
+    def __init__(self, population_size, chromosome_length, mutation_rate, crossover_rate, elitism_count):
+        self.population_size = population_size
+        self.chromosome_length = chromosome_length
+        self.mutation_rate = mutation_rate
+        self.crossover_rate = crossover_rate
+        self.elitism_count = elitism_count
+        self.generation_stats = []
+        self.best_chromosome = None
+        self.best_fitness = -1 # Initialise to a negative value
 
 """# The Individual **(~30%)**
-- Chromosome - The chromosome in this case is going to be the list of directions that the program has taken.
 
-- Crossover - This will involve taking the program output and deciding on a suitable time to change to another chromosomal output. A good time to consider changing this is when the snake has eaten food, or how quickly it can get to its destination.
+## Individual
+An individual represents a single instance of the game and it's output.
+An individual contains:
+- The moves made by the game.
+- The score taken at the end.
 
-- Mutation - This describes a chromosome that has been through the previous step and is either selected or rejected based on how well it did.
+<hr>
 
-## Discussion and justification on the approaches taken for the above
+* **Chromosome:** Also known as the individual, this will correspond to the program outputs for each iteration. It is a series of movements made by the program, and the recorded score.
+* **Population:** The number of chromosomes to be assessed each generation.
+
+<hr>
+
 """
 
-from copy import deepcopy
-class individual:
-  def __init__(self,problem):
-    self.chromosome = np.random.uniform(problem.min_value, problem.max_value, problem.number_of_genes)
-    self.cost = problem.cost_function(self.chromosome)
+def create_individual(self):
+    return [random.uniform(0, 4) for _ in range(self.chromosome_length)]
 
-  def mutate(self, rate_of_gene_mutation, range_of_gene_mutation):
-    for index in range(len(self.chromosome)):
-      if  np.random.uniform() < rate_of_gene_mutation:
-        self.chromosome[index] += np.random.randn() * range_of_gene_mutation
+def create_population(self):
+    return [self.create_individual() for _ in range(self.population_size)]
+GeneticAlgorithm.create_individual = create_individual # Adds methods to classes after declaration, allowing for access later, in different cells
+GeneticAlgorithm.create_population = create_population
 
-  def crossover(self, parent2, explore_crossover):
-    alpha = np.random.uniform(-explore_crossover, 1+explore_crossover)
-    child1 = deepcopy(self)
-    child2 = deepcopy(parent2)
-    child1.chromosome = alpha * self.chromosome + (1-alpha) * parent2.chromosome
-    child2.chromosome = alpha * parent2.chromosome + (1-alpha) * self.chromosome
-    return child1,child2
+"""## Cost Function
+The cost function needs to be able to assess how well a chromosome performed.
 
-"""---
-
-I think this could be a suitable method for improving the program, because it takes a set of results from it and goes on to use it for improving it incrementally. The improvement stems from two factors.
-- Score: This describes how well the program did overall, and is the most important factor in determining the success of the algorithm.
-- Directions: This describes how long the program ran, and any number of changes here could indicate a variety of different things.
-For example, if the computer moves in a circle, it would indefinitely increase the number of moves made, which is not necessarily a good or bad outcome.
-
-The two given factors need to be tied to each other to assess performance. The computer should ideally aim to go on for as long as it takes for the Snake to be forced to eat itself at some point, meaning it's score keeps increasing.
-
-A Genetic Algorithm implementation could take the better program outputs to make better decisions going forward, using the previous iterations for exactly this purpose.
-
----
-
-## Running the algorithm  **(~10%)**
-
-*   Parameter choices
-*   Modifications (if any) to run_genetic
-*   Rationale for the above
-
----
-
-I have reduced the sample size for less iterations. This will make the program run faster at the expense of having more usable data. It also reduces the chances of unforeseen errors.
-
----
+- **Score:** The score is the most important factor, as the only way to win the game is to maximise the score.
+- **Length:** The mount of time the chromosome stays alive, needs to be handled differently than the score, as an individual could stay allive by going in circles, so this factor should have less weighting than the Score.
 """
 
-class parameters:
-  def __init__(self):
-    self.population = 100 # Adjusted for a smaller sample size.
-    self.max_number_of_generations = 25
-    self.birth_rate_per_generation = 0.5
-    self.explore_crossover_range = 0.2
-    self.gene_mutation_range = 0.5
-    self.gene_mutation_rate = 0.2
+# Cost Function
+def cost_function(self, chromosome):
+    snake_game = Snake(chromosome)
+    score, moves = snake_game.play_game(chromosome)
 
-def choose_parents(population):
-  index1 = np.random.randint(population)
-  index2 = np.random.randint(population)
-  if index1 == index2:
-    return choose_parents(population)
-  return index1, index2
+    base_fitness = score * 100  # Heavy weight on eating food, less on survival time.
+    survival_bonus = len(moves) * 1
 
-def run_genetic(problem, parameters):
-  number_in_population = parameters.population
-  rate_of_gene_mutation = parameters.gene_mutation_rate
-  range_of_gene_mutation = parameters.gene_mutation_range
-  explore_crossover = parameters.explore_crossover_range
-  max_number_of_generations = parameters.max_number_of_generations
-  cost_function = problem.cost_function
-  acceptable_cost = problem.acceptable_cost
-  number_of_children_per_generation = number_in_population * parameters.birth_rate_per_generation
+    if len(moves) > 0: # Calculate chromosome efficiency.
+        efficiency_bonus = (score / len(moves)) * 50
+    else:
+        efficiency_bonus = 0
+    total_fitness = base_fitness + survival_bonus + efficiency_bonus
+    return max(0, total_fitness)
 
-  population = []
-  best_solution = individual(problem)
-  best_solution.cost = np.inf
+    print(f"Error evaluating fitness: {e}")
+    return 0
+GeneticAlgorithm.cost_function = cost_function
 
-  for i in range(number_in_population):
-    new_individual = individual(problem)
-    if new_individual.cost < best_solution.cost:
-      best_solution = deepcopy(new_individual)
-    population.append(new_individual)
-  print(f"Initial Population Size: {len(population)}")
-  print(f"Initial Best Cost: {best_solution.cost}")
+"""## Discussion and justification on the approaches taken for the above
 
-  for i in range(max_number_of_generations):
-    print(f"Generation: {i + 1}")
-    children = []
-    while len(children) < number_of_children_per_generation:
-      parent1_index, parent2_index = choose_parents(number_in_population)
+## Selection Function
+Choosing the parents is a process resulting from the fitness assessment of each individual. This program will use elitism to carry over the best chromosomes from each set.
 
-      parent1 = population[parent1_index]
-      parent2 = population[parent2_index]
+### Tournament Selection
+The Tournament selection method returns the most efficient chromosomes. It's very verbose, but supports changing tournament valuies, and shoule demonstrate the
 
-      child1, child2 = parent1.crossover(parent2, explore_crossover)
-      child1.mutate(rate_of_gene_mutation, range_of_gene_mutation)
-      child2.mutate(rate_of_gene_mutation, range_of_gene_mutation)
-      child1.cost = cost_function(child1.chromosome)
-      child2.cost = cost_function(child2.chromosome)
-      children.append(child1)
-      children.append(child2)
+### Crossover
+The crossover function defines where a new chromosome should be created from the old ones. The array should exist as a point that needs to be split somewhere, retaining part one and part two of each parent.
 
-    population += children
-    population = sorted(population, key=lambda x: x.cost)
-    population = population[:number_in_population]
-    if population[0].cost < best_solution.cost:
-      best_solution = deepcopy(population[0])
-      print(f"New best cost: {best_solution.cost}")
-      game = Snake(chromosome = best_solution.chromosome)
-      game.play_game(best_solution.chromosome)
-      game.display_board()
-    if best_solution.cost < acceptable_cost:
-      break
-  return population, best_solution
+### Mutation
+The Mutation function introduces random samples into a chromosome. It inserts a uniform selection of random moves into an existing chromosome to introduce  novelty to the genes.
+"""
 
-problem = problem()
-parameters = parameters()
-population, solution = run_genetic(problem, parameters)
-print(f"Best Solution: {solution.chromosome}")
-print(f"Best Cost: {solution.cost}")
+def tournament_selection(self, population, fitnesses, tournament_size=3):
+    tournament_indices = random.sample(range(len(population)), tournament_size)
+    tournament_fitnesses = [fitnesses[i] for i in tournament_indices]
+    winner_index = tournament_indices[tournament_fitnesses.index(max(tournament_fitnesses))]
+    return population[winner_index]
+GeneticAlgorithm.tournament_selection = tournament_selection
+
+def crossover(self, parent1, parent2):
+    if random.random() > self.crossover_rate:
+        return parent1[:], parent2[:]
+
+    crossover_point = random.randint(1, len(parent1) - 1)
+
+    child1 = parent1[:crossover_point] + parent2[crossover_point:]
+    child2 = parent2[:crossover_point] + parent1[crossover_point:]
+
+    return child1, child2
+GeneticAlgorithm.crossover = crossover
+
+def mutate(self, chromosome):
+    mutated = chromosome[:]
+    for i in range(len(mutated)):
+        if random.random() < self.mutation_rate:
+            mutated[i] = random.uniform(0, 4)
+
+    return mutated
+GeneticAlgorithm.mutate = mutate
+
+"""# Evolution
+The `evolve_generation()` method here takes the best individuals from the program and carries them into the next generation. This ensures the best chromosomes are preserved.
+
+Then it performs crossover and mutation on the parents to create offspring to introduce genetic diversity in the population.
+
+Then it returns the new population.
+"""
+
+def evolve_generation(self, population, fitnesses):
+    new_population = []
+
+    elite_indices = sorted(range(len(fitnesses)), key=lambda i: fitnesses[i], reverse=True)[:self.elitism_count]
+    for i in elite_indices:
+        new_population.append(population[i][:])
+
+    while len(new_population) < self.population_size: # Crossover and Mutation to generate children
+        parent1 = self.tournament_selection(population, fitnesses)
+        parent2 = self.tournament_selection(population, fitnesses)
+
+        child1, child2 = self.crossover(parent1, parent2)
+
+        child1 = self.mutate(child1)
+        child2 = self.mutate(child2)
+
+        new_population.extend([child1, child2])
+
+    return new_population[:self.population_size]
+GeneticAlgorithm.evolve_generation = evolve_generation
+
+"""## Running the algorithm  **(~10%)**
+
+#### Parameter Choices
+1. Population Size - The size of the given population per generation. 100, in this case.
+2. Chromosome Length - The amount of moves that were made over the programs duration. 150 as the maximum value. Because of how Snake works, it is very unlikely to reach 150 before failing some condition.
+3. Mutation Rate - The amount at which each chromosome has random changes added to it. This ensures novelty every instance. 0.15 in this rate should introduce random changes into 15% of chromosomes.
+4. Crossover Rate - The crossover rate defines how often the parents are used to create children. At the rate of 0.8 means that the parents will be used to create solutions 80% of the time. Parents are directly preserved 20% of the time.
+5. Elitism Count - This parameter defines how many iterations are directly preserved for the next generation. In this case, I kept it around 10% of the population size.
+
+#### Run Genetic:
+The run genetic method here performs the same purpose as the original, but has been edited to print generational metrics. To that end, the generations are also defined here instead of . It displays average fitness, maximum fitness and minimum fitness for each generation.
+
+"""
+
+def run_genetic(self, generations=100):
+    population = self.create_population()
+
+    for generation in range(generations):
+        fitnesses = [] # Array of fitness called FITNESSES. Used for evolution
+        for individual in population:
+            fitness = self.cost_function(individual)
+            fitnesses.append(fitness)
+
+        max_fitness = max(fitnesses)
+        avg_fitness = np.mean(fitnesses)
+        min_fitness = min(fitnesses)
+
+        best_idx = fitnesses.index(max_fitness)
+        if max_fitness > self.best_fitness:
+            self.best_fitness = max_fitness
+            self.best_chromosome = population[best_idx][:]
+
+        self.generation_stats.append({
+            'generation': generation,
+            'max_fitness': max_fitness,
+            'avg_fitness': avg_fitness,
+            'min_fitness': min_fitness
+        })
+
+        print(f"Generation {generation}: Max={max_fitness}, " f"Avg={avg_fitness}, Min={min_fitness}")
+
+        population = self.evolve_generation(population, fitnesses)
+
+    return self.best_chromosome, self.best_fitness
+GeneticAlgorithm.run_genetic = run_genetic
+
+def main():
+    print("Starting Genetic Algorithm Evolution for Snake Game")
+
+    ga = GeneticAlgorithm( # Modify parameters here.
+        population_size=100,
+        chromosome_length=150, # Max length
+        mutation_rate=0.15, # 15% mutation rate
+        crossover_rate=0.8, # 80% crossover rate
+        elitism_count=10 # Keep 10 samples from generation
+    )
+
+    best_chromosome, best_fitness = ga.run_genetic(generations=10)
+    print(f"Best fitness achieved: {best_fitness:.1f}")
+    return ga
+
+ga = main()
 
 """## Results and conclusions    **(~10%)**
 
 ---
 
-The algorithm worked in a limited manner. It was not capable of completing the game, but it did roughly improve the output by taking the previous outputs and adding the ability to asssess them based on factors such as the score and the history of the moveset.
+The work done here has demonstrated that the Genetic Algorithm can be used to enhance the Snake Game going forward. The resulting algorithm has produced better results than previous iterations of the same project, working as intended. Previous iterations were often not able to get a higher score than 1. This iteration occasionally gets scores as high as 3, and a score of 2 is much more common.
 
-It was still not close to a human performance, although it did improve the final result slightly.
-
-The final best cost is generally a negative number, representing lower costs, therefore a better solution. It ranges between negative one-third and negative two-thirds in most iterations.
+Future iterations of this project might focus moreso on fine tuning the parameters for the algorithm to enhance it on a smaller scale. The algorithm itself could be modified with a better seed generation, as a real game would not work with set seeds.
 
 ---
 """
